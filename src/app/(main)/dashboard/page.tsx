@@ -1,3 +1,4 @@
+"use client";
 import {
     Card,
     CardContent,
@@ -159,4 +160,3 @@ import {
       </div>
     )
   }
-  
