@@ -1,3 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -8,9 +14,75 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Logo } from "@/components/icons/logo"
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
+import { LoaderCircle } from "lucide-react";
+import { loginSchema, type LoginFormData } from "@/lib/validations";
 
 export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    
+    try {
+      await signIn(data.email, data.password);
+      toast({
+        title: "Success",
+        description: "Logged in successfully!",
+      });
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to sign in",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    
+    try {
+      await signInWithGoogle();
+      toast({
+        title: "Success",
+        description: "Logged in with Google successfully!",
+      });
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to sign in with Google",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="hidden bg-muted lg:flex lg:items-center lg:justify-center p-8">
@@ -30,35 +102,82 @@ export default function LoginPage() {
               Enter your email below to login to your account
             </p>
           </div>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="m@example.com"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <a
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  Forgot your password?
-                </a>
-              </div>
-              <Input id="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-            <Button variant="outline" className="w-full">
-              Login with Google
-            </Button>
-          </div>
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center">
+                      <FormLabel>Password</FormLabel>
+                      <a
+                        href="#"
+                        className="ml-auto inline-block text-sm underline"
+                      >
+                        Forgot your password?
+                      </a>
+                    </div>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Login"
+                )}
+              </Button>
+            </form>
+          </Form>
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              "Login with Google"
+            )}
+          </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             <a href="#" className="underline">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { optimizeProject, type FormState } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +44,7 @@ function SubmitButton() {
 }
 
 export default function OptimizePage() {
-  const [state, formAction] = useFormState(optimizeProject, initialState);
+  const [state, formAction] = useActionState(optimizeProject, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
