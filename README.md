@@ -1,4 +1,4 @@
-# Kite - Professional Services Automation Platform
+us# Kite - Professional Services Automation Platform
 
 Kite is a comprehensive, all-in-one platform designed to streamline operations for professional services organizations. It integrates Project Management, Customer Relationship Management (CRM), and AI-powered optimization tools into a single, intuitive interface. Built with a modern tech stack, Kite provides a robust and scalable solution for managing your business.
 
