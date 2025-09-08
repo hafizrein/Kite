@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -11,11 +12,9 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check for missing Firebase config. It's important to check this directly.
+// Check for missing Firebase config.
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error(
-    'Firebase configuration is missing. Make sure you have a .env file with your Firebase project credentials.'
-  );
+  throw new Error('Firebase configuration is missing or incomplete. Make sure you have a .env file with your Firebase project credentials, and that they are prefixed with NEXT_PUBLIC_.');
 }
 
 // Initialize Firebase
@@ -23,5 +22,4 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { auth, db };
-export default app;
+export { app, auth, db };
