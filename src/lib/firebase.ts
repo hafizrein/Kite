@@ -11,9 +11,11 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check for missing Firebase config
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'demo-api-key') {
-  console.error('Firebase configuration is missing or using demo values.');
+// Check for missing Firebase config. It's important to check this directly.
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error(
+    'Firebase configuration is missing. Make sure you have a .env file with your Firebase project credentials.'
+  );
 }
 
 // Initialize Firebase
