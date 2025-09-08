@@ -13,7 +13,7 @@ import { Logo } from "@/components/icons/logo";
 import { SidebarNav } from "./sidebar-nav";
 import { Header } from "./header";
 import { Button } from "../ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, LoaderCircle } from "lucide-react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
@@ -56,8 +56,8 @@ export default function MainLayout({
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex h-screen items-center justify-center">
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }

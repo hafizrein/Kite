@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,9 +33,15 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { user, signIn, signInWithGoogle, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -50,11 +56,7 @@ export default function LoginPage() {
     
     try {
       await signIn(data.email, data.password);
-      toast({
-        title: "Success",
-        description: "Logged in successfully!",
-      });
-      router.push("/dashboard");
+      // No longer need router.push here, useEffect will handle it
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -71,11 +73,7 @@ export default function LoginPage() {
     
     try {
       await signInWithGoogle();
-      toast({
-        title: "Success",
-        description: "Logged in with Google successfully!",
-      });
-      router.push("/dashboard");
+      // No longer need router.push here, useEffect will handle it
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -86,6 +84,14 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (authLoading || (!authLoading && user)) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
     return (
