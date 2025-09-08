@@ -44,12 +44,25 @@ export default function DashboardPage() {
 
   // Calculate real metrics from state data - optimized for performance
   const metrics = React.useMemo(() => {
-    const totalRevenue = state.projects.reduce((sum, project) => sum + project.spent, 0);
-    const activeProjects = state.projects.filter(p => p.status === 'In Progress').length;
+    // Calculate revenue as earned revenue based on project progress
+    const totalRevenue = state.projects.reduce((sum, project) => {
+      // For completed projects, use full budget. For others, use progress-based calculation
+      const earnedRevenue = project.status === 'Completed' 
+        ? project.budget 
+        : (project.budget * project.progress) / 100;
+      return sum + earnedRevenue;
+    }, 0);
+    // Active projects = all projects except completed ones
+    const activeProjects = state.projects.filter(p => p.status !== 'Completed').length;
     const totalProjects = state.projects.length;
     const completedProjects = state.projects.filter(p => p.status === 'Completed').length;
+    const inProgressProjects = state.projects.filter(p => p.status === 'In Progress').length;
     const taskCompletion = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
     const teamMembers = state.users.length;
+    
+    // Calculate total project value and potential revenue
+    const totalProjectValue = state.projects.reduce((sum, project) => sum + project.budget, 0);
+    const totalSpent = state.projects.reduce((sum, project) => sum + project.spent, 0);
     
     // Calculate opportunity pipeline value
     const pipelineValue = state.opportunities
@@ -69,7 +82,10 @@ export default function DashboardPage() {
       pipelineValue,
       weightedPipeline,
       totalProjects,
-      completedProjects
+      completedProjects,
+      inProgressProjects,
+      totalProjectValue,
+      totalSpent
     };
   }, [state.projects, state.opportunities, state.users]); // More specific dependencies
 
@@ -77,22 +93,22 @@ export default function DashboardPage() {
   const chartData = React.useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     return months.map((month, index) => {
-      // Mock data based on real projects with some variance
-      const baseDesktop = state.projects.filter(p => p.status === 'In Progress').length * 50;
-      const baseMobile = state.projects.filter(p => p.status === 'Completed').length * 30;
+      // Generate more realistic data based on actual project count
+      const totalProjects = state.projects.length;
+      const baseDesktop = Math.max(totalProjects * 30, 50);
+      const baseMobile = Math.max(totalProjects * 20, 30);
       
       return {
         month,
-        desktop: Math.round(baseDesktop + (Math.random() * 100) + (index * 20)),
-        mobile: Math.round(baseMobile + (Math.random() * 60) + (index * 15))
+        desktop: Math.round(baseDesktop + (Math.random() * 50) + (index * 10)),
+        mobile: Math.round(baseMobile + (Math.random() * 30) + (index * 8))
       };
     });
   }, [state.projects]);
 
-  // Get recent projects
+  // Get recent projects - show all projects, not just "In Progress"
   const recentProjects = React.useMemo(() => {
     return state.projects
-      .filter(p => p.status === 'In Progress')
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 5);
   }, [state.projects]);
@@ -161,14 +177,13 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Earned Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +12.5% from last month
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(metrics.totalSpent)} spent • {formatCurrency(metrics.totalProjectValue)} total value
             </p>
           </CardContent>
         </Card>
@@ -181,7 +196,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{metrics.activeProjects}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics.totalProjects} total projects
+              {metrics.totalProjects} total • {metrics.inProgressProjects} in progress
             </p>
           </CardContent>
         </Card>
@@ -290,14 +305,14 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Recent Projects</CardTitle>
             <CardDescription>
-              {recentProjects.length} active projects this month
+              {recentProjects.length} recent projects
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               {recentProjects.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No active projects found
+                  No projects found
                 </p>
               ) : (
                 recentProjects.map((project) => (

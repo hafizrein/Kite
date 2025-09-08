@@ -23,6 +23,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: Partial<User>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  updateUserRole: (role: User['role']) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,30 +45,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to manage auth cookies
+  const setAuthCookies = (user: User | null, token: string | null) => {
+    if (typeof document !== 'undefined') {
+      if (user && token) {
+        // Set auth cookies for middleware
+        document.cookie = `auth-token=${token}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `user-role=${user.role.toLowerCase()}; path=/; max-age=86400; samesite=strict`;
+      } else {
+        // Clear auth cookies
+        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'user-role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
-        const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as User);
-        } else {
-           const newUser: User = {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+          let userData: User;
+          
+          if (userDoc.exists()) {
+            userData = userDoc.data() as User;
+          } else {
+            // Create new user document
+            userData = {
               id: fbUser.uid,
               name: fbUser.displayName || 'New User',
               email: fbUser.email || '',
               role: 'Member',
               avatar: fbUser.photoURL || undefined,
             };
-            const userToSave: Partial<User> = { ...newUser };
+            const userToSave: Partial<User> = { ...userData };
             if (!userToSave.avatar) {
               delete userToSave.avatar;
             }
             await setDoc(doc(db, "users", fbUser.uid), userToSave, { merge: true });
-            setUser(newUser);
+          }
+          
+          setUser(userData);
+          
+          // Get auth token and set cookies
+          const token = await fbUser.getIdToken();
+          setAuthCookies(userData, token);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setUser(null);
+          setAuthCookies(null, null);
         }
       } else {
         setUser(null);
+        setAuthCookies(null, null);
       }
       setLoading(false);
     });
@@ -112,43 +143,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signInWithGoogle = async () => {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const fbUser = result.user;
-
-      const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
-      if (!userDoc.exists()) {
-        const newUser: User = {
-          id: fbUser.uid,
-          name: fbUser.displayName || 'New User',
-          email: fbUser.email || '',
-          role: 'Member', // Default role
-        };
-
-        if (fbUser.photoURL) {
-            newUser.avatar = fbUser.photoURL;
-        }
-
-        const userToSave: Partial<User> = {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-        }
-
-        if (newUser.avatar) {
-          userToSave.avatar = newUser.avatar;
-        }
-
-        await setDoc(doc(db, 'users', fbUser.uid), userToSave);
-        setUser(newUser);
-      }
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+    // Auth state change will be handled by the onAuthStateChanged listener
   };
 
   const logout = async () => {
+    setAuthCookies(null, null); // Clear cookies before signing out
     await signOut(auth);
     setUser(null);
     setFirebaseUser(null);
+  };
+
+  const updateUserRole = async (role: User['role']) => {
+    if (!firebaseUser || !user) {
+      throw new Error('No user logged in');
+    }
+
+    const updatedUser = { ...user, role };
+    
+    // Update in Firestore
+    await setDoc(doc(db, 'users', firebaseUser.uid), updatedUser, { merge: true });
+    
+    // Update local state
+    setUser(updatedUser);
+    
+    // Update cookies
+    const token = await firebaseUser.getIdToken();
+    setAuthCookies(updatedUser, token);
   };
 
   const value = {
@@ -159,6 +181,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUp,
     signInWithGoogle,
     logout,
+    updateUserRole,
   };
 
   return (

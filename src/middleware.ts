@@ -3,23 +3,32 @@ import type { NextRequest } from 'next/server';
 
 // Define role-based access control
 const ROLE_PERMISSIONS = {
+  owner: ['*'], // Full access
   admin: ['*'], // Full access
-  manager: [
+  pm: [
     '/dashboard',
     '/projects',
     '/crm',
     '/reports',
     '/timesheets',
-    '/settings'
+    '/settings',
+    '/optimize'
   ],
-  employee: [
+  sales: [
     '/dashboard',
     '/projects',
-    '/timesheets'
+    '/crm',
+    '/reports',
+    '/timesheets',
+    '/optimize'
   ],
-  client: [
+  member: [
     '/dashboard',
-    '/projects'
+    '/projects',
+    '/crm',
+    '/reports',
+    '/timesheets',
+    '/optimize'
   ]
 };
 
@@ -42,7 +51,10 @@ export function middleware(request: NextRequest) {
 
   // Get authentication token and user role from cookies
   const token = request.cookies.get('auth-token')?.value || '';
-  const userRole = request.cookies.get('user-role')?.value || 'employee';
+  const userRole = (request.cookies.get('user-role')?.value || 'member').toLowerCase();
+  
+  // Debug logging (remove in production)
+  console.log('Middleware:', { path, token: !!token, userRole, isPublicPath });
 
   // Check if the current path is protected
   const isProtectedRoute = PROTECTED_ROUTES.some(route => path.startsWith(route));
@@ -63,8 +75,8 @@ export function middleware(request: NextRequest) {
   if (token && isProtectedRoute) {
     const userPermissions = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS] || [];
     
-    // Admin has access to everything
-    if (userRole === 'admin' || userPermissions.includes('*')) {
+    // Owner and Admin have access to everything
+    if (userRole === 'owner' || userRole === 'admin' || userPermissions.includes('*')) {
       return NextResponse.next();
     }
 
@@ -74,6 +86,9 @@ export function middleware(request: NextRequest) {
     );
 
     if (!hasPermission) {
+      // Log for debugging
+      console.log('Access denied:', { userRole, path, userPermissions, hasPermission });
+      
       // Redirect to dashboard with error message
       const dashboardUrl = new URL('/dashboard', request.nextUrl);
       dashboardUrl.searchParams.set('error', 'access-denied');

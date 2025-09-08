@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Opportunity } from '@/lib/types';
+import { convertOpportunityToProject, opportunitiesService } from '@/lib/firestore';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,7 +40,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OpportunityForm } from '@/components/forms/opportunity-form';
 import { Input } from '@/components/ui/input';
-import { convertOpportunityToProject } from '@/lib/firestore';
 import { useToast } from "@/hooks/use-toast";
 
 export default function OpportunitiesPage() {
@@ -68,9 +68,18 @@ export default function OpportunitiesPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (opportunityId: string) => {
-    dispatch({ type: 'DELETE_OPPORTUNITY', payload: opportunityId });
-    setDeleteOpportunityId(null);
+  const handleDelete = async (opportunityId: string) => {
+    try {
+      // Delete from database
+      await opportunitiesService.delete(opportunityId);
+      
+      // Update local state
+      dispatch({ type: 'DELETE_OPPORTUNITY', payload: opportunityId });
+      setDeleteOpportunityId(null);
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      // You might want to show an error toast here
+    }
   };
 
   const handleFormClose = () => {

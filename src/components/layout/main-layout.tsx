@@ -35,7 +35,6 @@ export default function MainLayout({
     }
   }, [user, loading, router]);
 
-
   const handleLogout = async () => {
     try {
       await logout();

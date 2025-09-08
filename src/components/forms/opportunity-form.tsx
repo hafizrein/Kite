@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Opportunity } from '@/lib/types';
+import { opportunitiesService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,50 +41,94 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
     description: opportunity?.description || '',
     ownerId: opportunity?.ownerId || state.currentUser?.id || '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const selectedAccount = state.accounts.find(acc => acc.id === formData.accountId);
-    
-    const opportunityData: Opportunity = {
-      id: opportunity?.id || `opp-${Date.now()}`,
-      name: formData.name,
-      accountId: formData.accountId,
-      accountName: selectedAccount?.name || '',
-      stage: formData.stage,
-      amount: parseFloat(formData.amount) || 0,
-      probability: parseInt(formData.probability) || 0,
-      closeDate: formData.closeDate,
-      description: formData.description,
-      ownerId: formData.ownerId,
-      createdAt: opportunity?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
+  // Update form data when opportunity prop changes
+  useEffect(() => {
     if (opportunity) {
-      dispatch({
-        type: 'UPDATE_OPPORTUNITY',
-        payload: { id: opportunity.id, updates: opportunityData }
+      setFormData({
+        name: opportunity.name || '',
+        accountId: opportunity.accountId || '',
+        stage: opportunity.stage || 'Lead',
+        amount: opportunity.amount?.toString() || '',
+        probability: opportunity.probability?.toString() || '',
+        closeDate: opportunity.closeDate || '',
+        description: opportunity.description || '',
+        ownerId: opportunity.ownerId || state.currentUser?.id || '',
       });
     } else {
-      dispatch({
-        type: 'ADD_OPPORTUNITY',
-        payload: opportunityData
+      // Reset form for new opportunity
+      setFormData({
+        name: '',
+        accountId: '',
+        stage: 'Lead',
+        amount: '',
+        probability: '',
+        closeDate: '',
+        description: '',
+        ownerId: state.currentUser?.id || '',
       });
     }
+  }, [opportunity, state.currentUser?.id]);
 
-    onClose();
-    setFormData({
-      name: '',
-      accountId: '',
-      stage: 'Lead',
-      amount: '',
-      probability: '',
-      closeDate: '',
-      description: '',
-      ownerId: state.currentUser?.id || '',
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const selectedAccount = state.accounts.find(acc => acc.id === formData.accountId);
+      
+      const opportunityData: Omit<Opportunity, 'id'> = {
+        name: formData.name,
+        accountId: formData.accountId,
+        accountName: selectedAccount?.name || '',
+        stage: formData.stage,
+        amount: parseFloat(formData.amount) || 0,
+        probability: parseInt(formData.probability) || 0,
+        closeDate: formData.closeDate,
+        description: formData.description,
+        ownerId: formData.ownerId,
+        createdAt: opportunity?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (opportunity) {
+        // Update existing opportunity in database
+        await opportunitiesService.update(opportunity.id, opportunityData);
+        
+        // Update local state
+        dispatch({
+          type: 'UPDATE_OPPORTUNITY',
+          payload: { id: opportunity.id, updates: { ...opportunityData, id: opportunity.id } }
+        });
+      } else {
+        // Create new opportunity in database
+        const opportunityId = await opportunitiesService.create(opportunityData);
+        
+        // Add to local state with the new ID
+        dispatch({
+          type: 'ADD_OPPORTUNITY',
+          payload: { ...opportunityData, id: opportunityId }
+        });
+      }
+
+      onClose();
+      setFormData({
+        name: '',
+        accountId: '',
+        stage: 'Lead',
+        amount: '',
+        probability: '',
+        closeDate: '',
+        description: '',
+        ownerId: state.currentUser?.id || '',
+      });
+    } catch (error) {
+      console.error('Error saving opportunity:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -214,8 +259,11 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
-              {opportunity ? 'Update Opportunity' : 'Create Opportunity'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting 
+                ? (opportunity ? 'Updating...' : 'Creating...') 
+                : (opportunity ? 'Update Opportunity' : 'Create Opportunity')
+              }
             </Button>
           </DialogFooter>
         </form>

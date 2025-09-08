@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Account } from '@/lib/types';
+import { accountsService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,45 +53,87 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
     address: account?.address || '',
     ownerId: account?.ownerId || state.currentUser?.id || '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const accountData: Account = {
-      id: account?.id || `acc-${Date.now()}`,
-      name: formData.name,
-      industry: formData.industry,
-      website: formData.website,
-      phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      ownerId: formData.ownerId,
-      createdAt: account?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
+  // Update form data when account prop changes
+  useEffect(() => {
     if (account) {
-      dispatch({
-        type: 'UPDATE_ACCOUNT',
-        payload: { id: account.id, updates: accountData }
+      setFormData({
+        name: account.name || '',
+        industry: account.industry || '',
+        website: account.website || '',
+        phone: account.phone || '',
+        email: account.email || '',
+        address: account.address || '',
+        ownerId: account.ownerId || state.currentUser?.id || '',
       });
     } else {
-      dispatch({
-        type: 'ADD_ACCOUNT',
-        payload: accountData
+      // Reset form for new account
+      setFormData({
+        name: '',
+        industry: '',
+        website: '',
+        phone: '',
+        email: '',
+        address: '',
+        ownerId: state.currentUser?.id || '',
       });
     }
+  }, [account, state.currentUser?.id]);
 
-    onClose();
-    setFormData({
-      name: '',
-      industry: '',
-      website: '',
-      phone: '',
-      email: '',
-      address: '',
-      ownerId: state.currentUser?.id || '',
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const accountData: Omit<Account, 'id'> = {
+        name: formData.name,
+        industry: formData.industry,
+        website: formData.website,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+        ownerId: formData.ownerId,
+        createdAt: account?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (account) {
+        // Update existing account in database
+        await accountsService.update(account.id, accountData);
+        
+        // Update local state
+        dispatch({
+          type: 'UPDATE_ACCOUNT',
+          payload: { id: account.id, updates: { ...accountData, id: account.id } }
+        });
+      } else {
+        // Create new account in database
+        const accountId = await accountsService.create(accountData);
+        
+        // Add to local state with the new ID
+        dispatch({
+          type: 'ADD_ACCOUNT',
+          payload: { ...accountData, id: accountId }
+        });
+      }
+
+      onClose();
+      setFormData({
+        name: '',
+        industry: '',
+        website: '',
+        phone: '',
+        email: '',
+        address: '',
+        ownerId: state.currentUser?.id || '',
+      });
+    } catch (error) {
+      console.error('Error saving account:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -200,8 +243,11 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
-              {account ? 'Update Account' : 'Create Account'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting 
+                ? (account ? 'Updating...' : 'Creating...') 
+                : (account ? 'Update Account' : 'Create Account')
+              }
             </Button>
           </DialogFooter>
         </form>

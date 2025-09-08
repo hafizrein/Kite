@@ -39,7 +39,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      const redirectPath = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+      router.push(redirectPath);
     }
   }, [user, authLoading, router]);
 

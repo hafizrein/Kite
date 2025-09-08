@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Account } from '@/lib/types';
+import { accountsService } from '@/lib/firestore';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -64,9 +65,18 @@ export default function AccountsPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (accountId: string) => {
-    dispatch({ type: 'DELETE_ACCOUNT', payload: accountId });
-    setDeleteAccountId(null);
+  const handleDelete = async (accountId: string) => {
+    try {
+      // Delete from database
+      await accountsService.delete(accountId);
+      
+      // Update local state
+      dispatch({ type: 'DELETE_ACCOUNT', payload: accountId });
+      setDeleteAccountId(null);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      // You might want to show an error toast here
+    }
   };
 
   const handleFormClose = () => {

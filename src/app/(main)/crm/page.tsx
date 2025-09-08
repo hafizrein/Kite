@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -15,17 +14,9 @@ import { Users, Building, TrendingUp, DollarSign } from "lucide-react";
 import Link from "next/link";
 
 export default function CRMPage() {
-  const router = useRouter();
   const { state } = useApp();
 
-  // Redirect to accounts by default after 2 seconds, or let user choose
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/crm/accounts');
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [router]);
+  // No automatic redirect - let users navigate manually
 
   const totalAccounts = state.accounts.length;
   const totalOpportunities = state.opportunities.length;

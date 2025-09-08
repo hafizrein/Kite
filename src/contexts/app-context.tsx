@@ -168,21 +168,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         
-        const [projects, accounts, opportunities, users, timeEntries] = await Promise.all([
+        // Load data progressively instead of all at once
+        // Start with essential data first
+        const users = await usersService.getAll();
+        
+        // Load projects and opportunities in parallel (most commonly needed)
+        const [projects, opportunities] = await Promise.all([
           projectsService.getAll(),
-          accountsService.getAll(),
           opportunitiesService.getAll(),
-          usersService.getAll(),
+        ]);
+        
+        // Load remaining data
+        const [accounts, timeEntries] = await Promise.all([
+          accountsService.getAll(),
           timeEntriesService.getAll(),
         ]);
 
+        // Fix progress values for existing projects
+        const fixedProjects = projects.map(project => {
+          let correctedProgress = project.progress;
+          
+          // Auto-correct progress based on status if it seems wrong
+          if (project.status === 'Completed' && project.progress !== 100) {
+            correctedProgress = 100;
+          } else if (project.status === 'Not Started' && project.progress > 0) {
+            correctedProgress = 0;
+          }
+          
+          return correctedProgress !== project.progress 
+            ? { ...project, progress: correctedProgress }
+            : project;
+        });
+
         dispatch({ 
           type: 'SET_DATA', 
-          payload: { projects, accounts, opportunities, users, timeEntries } 
+          payload: { projects: fixedProjects, accounts, opportunities, users, timeEntries } 
         });
       } catch (error) {
         console.error('Error loading data:', error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        // Set empty arrays instead of keeping loading state
+        dispatch({ 
+          type: 'SET_DATA', 
+          payload: { 
+            projects: [], 
+            accounts: [], 
+            opportunities: [], 
+            users: [], 
+            timeEntries: [] 
+          } 
+        });
       }
     };
 

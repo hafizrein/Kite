@@ -169,7 +169,7 @@ export function WBSTree({ projectId, tasks, onTasksChange, users }: WBSTreeProps
       type: taskData.type || 'task',
       status: taskData.status || 'not-started',
       priority: taskData.priority || 'medium',
-      assignedTo: taskData.assignedTo,
+      assignedTo: taskData.assignedTo === 'unassigned' ? undefined : taskData.assignedTo,
       estimatedHours: taskData.estimatedHours || 0,
       actualHours: taskData.actualHours || 0,
       startDate: taskData.startDate,
@@ -454,7 +454,7 @@ function TaskDialog({ task, parentTaskId, users, onSave, onCancel }: TaskDialogP
     type: task?.type || 'task',
     status: task?.status || 'not-started',
     priority: task?.priority || 'medium',
-    assignedTo: task?.assignedTo || '',
+    assignedTo: task?.assignedTo || 'unassigned',
     estimatedHours: task?.estimatedHours || 0,
     actualHours: task?.actualHours || 0,
     startDate: task?.startDate || '',
@@ -568,7 +568,7 @@ function TaskDialog({ task, parentTaskId, users, onSave, onCancel }: TaskDialogP
                 <SelectValue placeholder="Select user" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {users.map(user => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name}

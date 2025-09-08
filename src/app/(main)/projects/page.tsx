@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Project } from '@/lib/types';
+import { projectsService } from '@/lib/firestore';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -66,9 +67,18 @@ export default function ProjectsPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (projectId: string) => {
-    dispatch({ type: 'DELETE_PROJECT', payload: projectId });
-    setDeleteProjectId(null);
+  const handleDelete = async (projectId: string) => {
+    try {
+      // Delete from database
+      await projectsService.delete(projectId);
+      
+      // Update local state
+      dispatch({ type: 'DELETE_PROJECT', payload: projectId });
+      setDeleteProjectId(null);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      // You might want to show an error toast here
+    }
   };
 
   const handleFormClose = () => {

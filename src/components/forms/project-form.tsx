@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
 import { Project } from '@/lib/types';
+import { projectsService } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,56 +38,146 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
     startDate: project?.startDate || '',
     endDate: project?.endDate || '',
     budget: project?.budget?.toString() || '',
+    spent: project?.spent?.toString() || '0',
     managerId: project?.managerId || state.currentUser?.id || '',
+    progress: project?.progress?.toString() || '0',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const projectData: Project = {
-      id: project?.id || `proj-${Date.now()}`,
-      name: formData.name,
-      description: formData.description,
-      status: formData.status,
-      cpi: project?.cpi || 1.0,
-      spi: project?.spi || 1.0,
-      progress: project?.progress || 0,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      budget: parseFloat(formData.budget) || 0,
-      spent: project?.spent || 0,
-      managerId: formData.managerId,
-      teamMembers: project?.teamMembers || [],
-      createdAt: project?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
+  // Update form data when project prop changes
+  useEffect(() => {
     if (project) {
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { id: project.id, updates: projectData }
+      setFormData({
+        name: project.name || '',
+        description: project.description || '',
+        status: project.status || 'Not Started',
+        startDate: project.startDate || '',
+        endDate: project.endDate || '',
+        budget: project.budget?.toString() || '',
+        spent: project.spent?.toString() || '0',
+        managerId: project.managerId || state.currentUser?.id || '',
+        progress: project.progress?.toString() || '0',
       });
     } else {
-      dispatch({
-        type: 'ADD_PROJECT',
-        payload: projectData
+      // Reset form for new project
+      setFormData({
+        name: '',
+        description: '',
+        status: 'Not Started',
+        startDate: '',
+        endDate: '',
+        budget: '',
+        spent: '0',
+        managerId: state.currentUser?.id || '',
+        progress: '0',
       });
     }
+  }, [project, state.currentUser?.id]);
 
-    onClose();
-    setFormData({
-      name: '',
-      description: '',
-      status: 'Not Started',
-      startDate: '',
-      endDate: '',
-      budget: '',
-      managerId: state.currentUser?.id || '',
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Calculate progress based on status if not explicitly set
+      let calculatedProgress = parseFloat(formData.progress) || 0;
+      
+      // Auto-calculate progress based on status
+      if (formData.status === 'Completed') {
+        calculatedProgress = 100;
+      } else if (formData.status === 'Not Started') {
+        calculatedProgress = Math.max(0, calculatedProgress); // Keep user input but ensure >= 0
+      } else if (formData.status === 'In Progress') {
+        calculatedProgress = Math.max(1, Math.min(99, calculatedProgress)); // Between 1-99%
+      } else if (formData.status === 'On Hold') {
+        calculatedProgress = Math.max(0, Math.min(99, calculatedProgress)); // Keep current progress
+      }
+
+      const projectData: Omit<Project, 'id'> = {
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        cpi: project?.cpi || 1.0,
+        spi: project?.spi || 1.0,
+        progress: calculatedProgress,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        budget: parseFloat(formData.budget) || 0,
+        spent: parseFloat(formData.spent) || 0,
+        managerId: formData.managerId,
+        teamMembers: project?.teamMembers || [],
+        createdAt: project?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (project) {
+        // Update existing project in database
+        await projectsService.update(project.id, projectData);
+        
+        // Update local state
+        dispatch({
+          type: 'UPDATE_PROJECT',
+          payload: { id: project.id, updates: { ...projectData, id: project.id } }
+        });
+      } else {
+        // Create new project in database
+        const projectId = await projectsService.create(projectData);
+        
+        // Add to local state with the new ID
+        dispatch({
+          type: 'ADD_PROJECT',
+          payload: { ...projectData, id: projectId }
+        });
+      }
+
+      onClose();
+      setFormData({
+        name: '',
+        description: '',
+        status: 'Not Started',
+        startDate: '',
+        endDate: '',
+        budget: '',
+        spent: '0',
+        managerId: state.currentUser?.id || '',
+        progress: '0',
+      });
+    } catch (error) {
+      console.error('Error saving project:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-update progress when status changes
+      if (field === 'status') {
+        switch (value) {
+          case 'Completed':
+            newData.progress = '100';
+            break;
+          case 'Not Started':
+            newData.progress = '0';
+            break;
+          case 'In Progress':
+            // Keep current progress if it's reasonable, otherwise set to 50%
+            const currentProgress = parseFloat(prev.progress) || 0;
+            if (currentProgress <= 0) {
+              newData.progress = '50';
+            }
+            break;
+          case 'On Hold':
+            // Keep current progress
+            break;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   return (
@@ -177,24 +268,58 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budget ($)</Label>
-            <Input
-              id="budget"
-              type="number"
-              step="0.01"
-              value={formData.budget}
-              onChange={(e) => handleChange('budget', e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="budget">Budget ($)</Label>
+              <Input
+                id="budget"
+                type="number"
+                step="0.01"
+                value={formData.budget}
+                onChange={(e) => handleChange('budget', e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="spent">Spent ($)</Label>
+              <Input
+                id="spent"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.spent}
+                onChange={(e) => handleChange('spent', e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="progress">Progress (%)</Label>
+              <Input
+                id="progress"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.progress}
+                onChange={(e) => handleChange('progress', e.target.value)}
+                placeholder="0-100"
+              />
+              <p className="text-xs text-muted-foreground">
+                Auto-calculated based on status, or set manually
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
-              {project ? 'Update Project' : 'Create Project'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting 
+                ? (project ? 'Updating...' : 'Creating...') 
+                : (project ? 'Update Project' : 'Create Project')
+              }
             </Button>
           </DialogFooter>
         </form>
