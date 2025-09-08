@@ -89,10 +89,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         name: userData.name || 'User',
         email: email,
         role: userData.role || 'Member',
-        avatar: userData.avatar,
         department: userData.department,
         hourlyRate: userData.hourlyRate,
       };
+
+      if (userData.avatar) {
+        newUser.avatar = userData.avatar;
+      }
       
       await setDoc(doc(db, 'users', result.user.uid), newUser);
       setUser(newUser);
@@ -110,8 +113,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           name: fbUser.displayName || 'New User',
           email: fbUser.email || '',
           role: 'Member', // Default role
-          avatar: fbUser.photoURL || undefined,
         };
+
+        if (fbUser.photoURL) {
+            newUser.avatar = fbUser.photoURL;
+        }
+
         await setDoc(doc(db, 'users', fbUser.uid), newUser);
         setUser(newUser);
       }
