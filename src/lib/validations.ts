@@ -127,10 +127,6 @@ export const registerSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one lowercase letter, one uppercase letter, and one number"),
   confirmPassword: z.string(),
-  role: z.enum(["admin", "manager", "employee", "client"], {
-    required_error: "Please select a role",
-  }),
-  department: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

@@ -29,6 +29,7 @@ import { LoaderCircle } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -197,9 +198,9 @@ export default function LoginPage() {
           </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <a href="#" className="underline">
+            <Link href="/signup" className="underline">
               Sign up
-            </a>
+            </Link>
           </div>
         </div>
       </div>
