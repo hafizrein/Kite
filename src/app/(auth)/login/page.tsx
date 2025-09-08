@@ -32,7 +32,7 @@ import { Terminal } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const { user, signIn, signInWithGoogle, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -52,7 +52,7 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
+    setIsFormLoading(true);
     
     try {
       await signIn(data.email, data.password);
@@ -64,12 +64,12 @@ export default function LoginPage() {
         description: error.message || "Failed to sign in",
       });
     } finally {
-      setIsLoading(false);
+      setIsFormLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsFormLoading(true);
     
     try {
       await signInWithGoogle();
@@ -81,7 +81,7 @@ export default function LoginPage() {
         description: error.message || "Failed to sign in with Google",
       });
     } finally {
-      setIsLoading(false);
+      setIsFormLoading(false);
     }
   };
 
@@ -138,7 +138,7 @@ export default function LoginPage() {
                       <Input
                         type="email"
                         placeholder="m@example.com"
-                        disabled={isLoading}
+                        disabled={isFormLoading}
                         {...field}
                       />
                     </FormControl>
@@ -164,7 +164,7 @@ export default function LoginPage() {
                     <FormControl>
                       <Input 
                         type="password" 
-                        disabled={isLoading}
+                        disabled={isFormLoading}
                         {...field}
                       />
                     </FormControl>
@@ -173,8 +173,8 @@ export default function LoginPage() {
                 )}
               />
               
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={isFormLoading}>
+                {isFormLoading ? (
                   <>
                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                     Signing In...
@@ -191,9 +191,9 @@ export default function LoginPage() {
             variant="outline" 
             className="w-full"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isFormLoading}
           >
-            {isLoading ? (
+            {isFormLoading ? (
               <>
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 Signing In...

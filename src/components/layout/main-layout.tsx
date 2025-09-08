@@ -7,7 +7,6 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
 import { SidebarNav } from "./sidebar-nav";
