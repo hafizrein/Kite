@@ -133,24 +133,16 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="list" className="space-y-4">
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="list">Project List</TabsTrigger>
-            <TabsTrigger value="kanban">Kanban View</TabsTrigger>
-          </TabsList>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Button>
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Project
+        </Button>
+      </div>
 
-        <TabsContent value="list">
-          <Card>
-            <CardHeader>
-              <CardTitle>Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
+      <Card>
+        <CardContent className="pt-6">
           {/* Filters */}
           <div className="flex gap-4 mb-6">
             <Input
@@ -277,21 +269,9 @@ export default function ProjectsPage() {
               )}
             </TableBody>
           </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="kanban">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center text-muted-foreground">
-                <p>Kanban view coming soon...</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
+        </CardContent>
+      </Card>
+      
       {/* Project Form Dialog */}
       <ProjectForm
         project={editingProject || undefined}

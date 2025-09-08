@@ -5,7 +5,7 @@ export const userSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name must be less than 50 characters"),
   email: z.string().email("Please enter a valid email address"),
-  role: z.enum(["admin", "manager", "employee", "client"], {
+  role: z.enum(["Owner", "Admin", "PM", "Sales", "Member"], {
     required_error: "Please select a role",
   }),
   department: z.string().optional(),
@@ -23,10 +23,10 @@ export const projectSchema = z.object({
   }),
   managerId: z.string().min(1, "Please assign a project manager"),
   startDate: z.string().min(1, "Please select a start date"),
-  endDate: z.string().min(1, "Please select an end date"),
+  endDate: z.string().optional(),
   budget: z.number().min(0, "Budget must be positive"),
   spent: z.number().min(0, "Spent amount must be positive").optional(),
-  progress: z.number().min(0, "Progress must be at least 0").max(100, "Progress cannot exceed 100"),
+  progress: z.number().min(0, "Progress must be at least 0").max(100, "Progress cannot exceed 100").optional(),
   cpi: z.number().min(0, "CPI must be positive").optional(),
   spi: z.number().min(0, "SPI must be positive").optional(),
 }).refine((data) => {
@@ -43,19 +43,12 @@ export const projectSchema = z.object({
 export const accountSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, "Account name must be at least 2 characters").max(100, "Account name must be less than 100 characters"),
-  type: z.enum(["Prospect", "Customer", "Partner", "Vendor"], {
-    required_error: "Please select an account type",
-  }),
   industry: z.string().max(50, "Industry must be less than 50 characters").optional(),
-  size: z.enum(["Small", "Medium", "Large", "Enterprise"], {
-    required_error: "Please select a company size",
-  }),
-  revenue: z.number().min(0, "Revenue must be positive").optional(),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   phone: z.string().max(20, "Phone number must be less than 20 characters").optional(),
   email: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   address: z.string().max(200, "Address must be less than 200 characters").optional(),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  ownerId: z.string().min(1, "Please assign an owner"),
 });
 
 // Opportunity validation schema
@@ -64,7 +57,7 @@ export const opportunitySchema = z.object({
   name: z.string().min(2, "Opportunity name must be at least 2 characters").max(100, "Opportunity name must be less than 100 characters"),
   accountId: z.string().min(1, "Please select an account"),
   stage: z.enum([
-    "Prospecting", 
+    "Lead", 
     "Qualification", 
     "Proposal", 
     "Negotiation", 
@@ -78,14 +71,6 @@ export const opportunitySchema = z.object({
   closeDate: z.string().min(1, "Please select a close date"),
   description: z.string().max(500, "Description must be less than 500 characters").optional(),
   ownerId: z.string().min(1, "Please assign an owner"),
-}).refine((data) => {
-  const closeDate = new Date(data.closeDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return closeDate >= today;
-}, {
-  message: "Close date cannot be in the past",
-  path: ["closeDate"],
 });
 
 // Time Entry validation schema
@@ -97,10 +82,7 @@ export const timeEntrySchema = z.object({
   hours: z.number().min(0.1, "Hours must be at least 0.1").max(24, "Hours cannot exceed 24 per day"),
   description: z.string().min(5, "Description must be at least 5 characters").max(200, "Description must be less than 200 characters"),
   billable: z.boolean(),
-  status: z.enum(["draft", "submitted", "approved", "rejected"], {
-    required_error: "Please select a status",
-  }),
-  hourlyRate: z.number().min(0, "Hourly rate must be positive").optional(),
+  approved: z.boolean().optional(),
 }).refine((data) => {
   const entryDate = new Date(data.date);
   const today = new Date();
@@ -192,7 +174,10 @@ export const wbsTaskSchema = z.object({
   message: "End date must be after start date",
   path: ["endDate"],
 }).refine((data) => {
-  return data.actualHours <= data.estimatedHours * 2; // Allow some flexibility
+  if (data.estimatedHours > 0) {
+    return data.actualHours <= data.estimatedHours * 2; // Allow some flexibility
+  }
+  return true;
 }, {
   message: "Actual hours significantly exceed estimated hours",
   path: ["actualHours"],
