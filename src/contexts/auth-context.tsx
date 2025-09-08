@@ -52,8 +52,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (userDoc.exists()) {
           setUser(userDoc.data() as User);
         } else {
-          // This case might happen if a user was created but the doc failed to write
-          // We can try to create it here as a fallback, but primary creation should be in signup/google-signin
            const newUser: User = {
               id: fbUser.uid,
               name: fbUser.displayName || 'New User',
@@ -61,7 +59,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
               role: 'Member',
               avatar: fbUser.photoURL || undefined,
             };
-            await setDoc(doc(db, "users", fbUser.uid), newUser, { merge: true });
+            const userToSave: Partial<User> = { ...newUser };
+            if (!userToSave.avatar) {
+              delete userToSave.avatar;
+            }
+            await setDoc(doc(db, "users", fbUser.uid), userToSave, { merge: true });
             setUser(newUser);
         }
       } else {
@@ -91,13 +93,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         role: userData.role || 'Member',
         department: userData.department,
         hourlyRate: userData.hourlyRate,
+        avatar: userData.avatar,
       };
 
-      if (userData.avatar) {
-        newUser.avatar = userData.avatar;
-      }
+      const userToSave: Partial<User> = {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      };
+
+      if (newUser.department) userToSave.department = newUser.department;
+      if (newUser.hourlyRate) userToSave.hourlyRate = newUser.hourlyRate;
+      if (newUser.avatar) userToSave.avatar = newUser.avatar;
       
-      await setDoc(doc(db, 'users', result.user.uid), newUser);
+      await setDoc(doc(db, 'users', result.user.uid), userToSave);
       setUser(newUser);
   };
 
@@ -119,7 +129,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             newUser.avatar = fbUser.photoURL;
         }
 
-        await setDoc(doc(db, 'users', fbUser.uid), newUser);
+        const userToSave: Partial<User> = {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        }
+
+        if (newUser.avatar) {
+          userToSave.avatar = newUser.avatar;
+        }
+
+        await setDoc(doc(db, 'users', fbUser.uid), userToSave);
         setUser(newUser);
       }
   };
