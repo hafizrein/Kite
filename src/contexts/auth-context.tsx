@@ -8,7 +8,8 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -44,50 +45,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
-      
-      if (firebaseUser) {
-        // Get user data from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          let userData: User;
-          
-          if (userDoc.exists()) {
-            userData = userDoc.data() as User;
-          } else {
-            // Create user document if it doesn't exist (for Google sign-in)
-            userData = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'User',
-              email: firebaseUser.email || '',
-              role: 'Member', // Default role
-              avatar: firebaseUser.photoURL || undefined,
-              department: undefined,
-              hourlyRate: undefined,
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setFirebaseUser(fbUser);
+      if (fbUser) {
+        const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+        if (userDoc.exists()) {
+          setUser(userDoc.data() as User);
+        } else {
+          // This case might happen if a user was created but the doc failed to write
+          // We can try to create it here as a fallback, but primary creation should be in signup/google-signin
+           const newUser: User = {
+              id: fbUser.uid,
+              name: fbUser.displayName || 'New User',
+              email: fbUser.email || '',
+              role: 'Member',
+              avatar: fbUser.photoURL || undefined,
             };
-            
-            await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-          }
-          
-          setUser(userData);
-          
-          // Set auth token and role cookies for middleware
-          const token = await firebaseUser.getIdToken();
-          document.cookie = `auth-token=${token}; path=/; max-age=3600; secure; samesite=strict`;
-          document.cookie = `user-role=${userData.role}; path=/; max-age=3600; secure; samesite=strict`;
-          
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setUser(null);
+            await setDoc(doc(db, "users", fbUser.uid), newUser, { merge: true });
+            setUser(newUser);
         }
       } else {
         setUser(null);
-        // Clear auth cookies
-        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        document.cookie = 'user-role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       }
-      
       setLoading(false);
     });
 
@@ -95,24 +74,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      setLoading(false);
-      if (error.message?.includes('Firebase not configured')) {
-        throw new Error('Authentication is not configured. Please set up Firebase credentials.');
-      }
-      throw error;
-    }
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUp = async (email: string, password: string, userData: Partial<User>) => {
-    setLoading(true);
-    try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Create user document in Firestore
+      await updateProfile(result.user, {
+        displayName: userData.name
+      });
+      
       const newUser: User = {
         id: result.user.uid,
         name: userData.name || 'User',
@@ -125,37 +96,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       await setDoc(doc(db, 'users', result.user.uid), newUser);
       setUser(newUser);
-    } catch (error) {
-      setLoading(false);
-      throw error;
-    }
   };
 
   const signInWithGoogle = async () => {
-    setLoading(true);
-    try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      setLoading(false);
-      if (error.message?.includes('Firebase not configured')) {
-        throw new Error('Google authentication is not configured. Please set up Firebase credentials.');
+      const result = await signInWithPopup(auth, provider);
+      const fbUser = result.user;
+
+      const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+      if (!userDoc.exists()) {
+        const newUser: User = {
+          id: fbUser.uid,
+          name: fbUser.displayName || 'New User',
+          email: fbUser.email || '',
+          role: 'Member', // Default role
+          avatar: fbUser.photoURL || undefined,
+        };
+        await setDoc(doc(db, 'users', fbUser.uid), newUser);
+        setUser(newUser);
       }
-      throw error;
-    }
   };
 
   const logout = async () => {
-    setLoading(true);
-    try {
-      await signOut(auth);
-      setUser(null);
-      setFirebaseUser(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setLoading(false);
-    }
+    await signOut(auth);
+    setUser(null);
+    setFirebaseUser(null);
   };
 
   const value = {
