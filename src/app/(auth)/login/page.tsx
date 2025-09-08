@@ -27,6 +27,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validations";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,21 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Alert variant="destructive" className="max-w-md">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Configuration Error</AlertTitle>
+          <AlertDescription>
+            Firebase configuration is missing. The application cannot connect to Firebase because the required environment variables are not loaded. Please ensure your `.env` file is correctly set up.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+  
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="hidden bg-muted lg:flex lg:items-center lg:justify-center p-8">
