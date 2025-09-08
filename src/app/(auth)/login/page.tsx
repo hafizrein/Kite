@@ -93,7 +93,7 @@ export default function LoginPage() {
           <Terminal className="h-4 w-4" />
           <AlertTitle>Configuration Error</AlertTitle>
           <AlertDescription>
-            Firebase configuration is missing. The application cannot connect to Firebase because the required environment variables are not loaded. Please ensure your `.env` file is correctly set up.
+            Firebase configuration is missing. The application cannot connect to Firebase because the required environment variables are not loaded. Please ensure your `.env` file is correctly set up with `NEXT_PUBLIC_` prefixes.
           </AlertDescription>
         </Alert>
       </div>

@@ -13,8 +13,8 @@ const firebaseConfig = {
 };
 
 // This check is important to ensure that the environment variables are loaded correctly.
-if (!firebaseConfig.apiKey) {
-  throw new Error('Firebase configuration is missing. Make sure all NEXT_PUBLIC_FIREBASE environment variables are set.');
+if (!firebaseConfig.projectId) {
+  console.error('Firebase configuration is missing. Make sure all NEXT_PUBLIC_FIREBASE environment variables are set in your .env file.');
 }
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
