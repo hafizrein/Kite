@@ -4,15 +4,19 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "kite-ndagf",
-  appId: "REDACTED_FIREBASE_APP_ID",
-  storageBucket: "kite-ndagf.firebasestorage.app",
-  apiKey: "REDACTED_FIREBASE_API_KEY",
-  authDomain: "kite-ndagf.firebaseapp.com",
-  messagingSenderId: "REDACTED_SENDER_ID"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
+// This check is important to ensure that the environment variables are loaded correctly.
+if (!firebaseConfig.apiKey) {
+  throw new Error('Firebase configuration is missing. Make sure all NEXT_PUBLIC_FIREBASE environment variables are set.');
+}
+
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
