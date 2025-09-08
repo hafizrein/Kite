@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { OrganizationSwitcher, OrganizationProvider } from "@/components/organization-switcher";
+import { useEffect } from "react";
 
 export default function MainLayout({
   children,
@@ -28,6 +29,13 @@ export default function MainLayout({
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
 
   const handleLogout = async () => {
     try {
@@ -46,7 +54,7 @@ export default function MainLayout({
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -54,10 +62,6 @@ export default function MainLayout({
     );
   }
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
   return (
     <OrganizationProvider>
       <SidebarProvider>
