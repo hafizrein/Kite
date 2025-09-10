@@ -183,13 +183,23 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
                   <SelectValue placeholder="Select owner" />
                 </SelectTrigger>
                 <SelectContent>
-                  {state.users
-                    .filter(user => user.role === 'Sales' || user.role === 'Admin')
-                    .map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
+                  {state.users.length === 0 ? (
+                    <SelectItem value="no-users" disabled>
+                      No users available
+                    </SelectItem>
+                  ) : state.users.filter(user => user.role === 'Sales' || user.role === 'Admin').length === 0 ? (
+                    <SelectItem value="no-sales-users" disabled>
+                      No Sales/Admin users found
+                    </SelectItem>
+                  ) : (
+                    state.users
+                      .filter(user => user.role === 'Sales' || user.role === 'Admin')
+                      .map(user => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name} ({user.role})
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

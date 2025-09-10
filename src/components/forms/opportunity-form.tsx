@@ -161,11 +161,17 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
-                {state.accounts.map(account => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
+                {state.accounts.length === 0 ? (
+                  <SelectItem value="no-accounts" disabled>
+                    No accounts available
                   </SelectItem>
-                ))}
+                ) : (
+                  state.accounts.map(account => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -195,13 +201,23 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
                   <SelectValue placeholder="Select owner" />
                 </SelectTrigger>
                 <SelectContent>
-                  {state.users
-                    .filter(user => user.role === 'Sales' || user.role === 'Admin')
-                    .map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
+                  {state.users.length === 0 ? (
+                    <SelectItem value="no-users" disabled>
+                      No users available
+                    </SelectItem>
+                  ) : state.users.filter(user => user.role === 'Sales' || user.role === 'Admin').length === 0 ? (
+                    <SelectItem value="no-sales-users" disabled>
+                      No Sales/Admin users found
+                    </SelectItem>
+                  ) : (
+                    state.users
+                      .filter(user => user.role === 'Sales' || user.role === 'Admin')
+                      .map(user => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name} ({user.role})
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

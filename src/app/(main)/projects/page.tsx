@@ -180,6 +180,7 @@ export default function ProjectsPage() {
               <TableRow>
                 <TableHead>Project Name</TableHead>
                 <TableHead>Manager</TableHead>
+                <TableHead>Team Members</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Budget</TableHead>
                 <TableHead>CPI</TableHead>
@@ -193,7 +194,7 @@ export default function ProjectsPage() {
             <TableBody>
               {filteredProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     No projects found.
                   </TableCell>
                 </TableRow>
@@ -213,6 +214,27 @@ export default function ProjectsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{getManagerName(project.managerId)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {project.teamMembers.length > 0 ? (
+                          project.teamMembers.slice(0, 3).map(memberId => {
+                            const member = state.users.find(u => u.id === memberId);
+                            return member ? (
+                              <Badge key={memberId} variant="outline" className="text-xs">
+                                {member.name}
+                              </Badge>
+                            ) : null;
+                          })
+                        ) : (
+                          <span className="text-muted-foreground text-sm">No members</span>
+                        )}
+                        {project.teamMembers.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{project.teamMembers.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(project.status)}>
                         {project.status}

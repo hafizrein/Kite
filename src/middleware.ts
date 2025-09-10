@@ -20,6 +20,7 @@ const ROLE_PERMISSIONS = {
     '/crm',
     '/reports',
     '/timesheets',
+    '/settings',
     '/optimize'
   ],
   member: [
@@ -28,6 +29,7 @@ const ROLE_PERMISSIONS = {
     '/crm',
     '/reports',
     '/timesheets',
+    '/settings',
     '/optimize'
   ]
 };
@@ -53,8 +55,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value || '';
   const userRole = (request.cookies.get('user-role')?.value || 'member').toLowerCase();
   
-  // Debug logging (remove in production)
-  console.log('Middleware:', { path, token: !!token, userRole, isPublicPath });
+  // Production: Remove debug logging
+  // console.log('Middleware:', { path, token: !!token, userRole, isPublicPath });
 
   // Check if the current path is protected
   const isProtectedRoute = PROTECTED_ROUTES.some(route => path.startsWith(route));
@@ -86,8 +88,8 @@ export function middleware(request: NextRequest) {
     );
 
     if (!hasPermission) {
-      // Log for debugging
-      console.log('Access denied:', { userRole, path, userPermissions, hasPermission });
+      // Production: Remove debug logging
+      // console.log('Access denied:', { userRole, path, userPermissions, hasPermission });
       
       // Redirect to dashboard with error message
       const dashboardUrl = new URL('/dashboard', request.nextUrl);

@@ -11,7 +11,7 @@ import {
   signInWithPopup,
   updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { User } from '@/lib/types';
 
@@ -72,11 +72,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
             userData = userDoc.data() as User;
           } else {
             // Create new user document
+            // First user becomes Owner, subsequent users become Members
+            const allUsersSnapshot = await getDocs(collection(db, 'users'));
+            const isFirstUser = allUsersSnapshot.empty;
+            
             userData = {
               id: fbUser.uid,
               name: fbUser.displayName || 'New User',
               email: fbUser.email || '',
-              role: 'Member',
+              role: isFirstUser ? 'Owner' : 'Member',
               avatar: fbUser.photoURL || undefined,
             };
             const userToSave: Partial<User> = { ...userData };

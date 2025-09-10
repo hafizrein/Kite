@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useApp } from '@/contexts/app-context';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -59,7 +60,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  Globe
+  Globe,
+  Users
 } from "lucide-react";
 
 interface RateCard {
@@ -92,8 +94,9 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { state } = useApp();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
   const [loading, setLoading] = useState(false);
   const [editingRateCard, setEditingRateCard] = useState<RateCard | null>(null);
   
@@ -173,6 +176,14 @@ export default function SettingsPage() {
       });
     }
   }, [user]);
+
+  // Update active tab when search params change
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleSaveProfile = async () => {
     setLoading(true);
@@ -380,7 +391,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
             Profile
@@ -401,6 +412,12 @@ export default function SettingsPage() {
             <Shield className="h-4 w-4 mr-2" />
             Security
           </TabsTrigger>
+          {['Owner', 'Admin'].includes(user?.role || '') && (
+            <TabsTrigger value="users">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -814,6 +831,35 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {['Owner', 'Admin'].includes(user?.role || '') && (
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  Manage user roles and permissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-muted-foreground">User Management</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Advanced user management features are available in a dedicated section.
+                  </p>
+                  <Button 
+                    onClick={() => window.location.href = '/settings/users'}
+                    variant="outline"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Go to User Management
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

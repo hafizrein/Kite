@@ -109,7 +109,7 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 # Google AI API Key (for AI optimization features)
-GOOGLE_AI_API_KEY=your_google_ai_api_key
+GOOGLE_GENAI_API_KEY=your_google_ai_api_key
 ```
 
 ### 3. Firebase Setup

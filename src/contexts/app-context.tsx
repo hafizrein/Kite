@@ -10,6 +10,7 @@ import {
   timeEntriesService 
 } from '@/lib/firestore';
 import { useAuth } from './auth-context';
+import { createSampleDataIfNeeded } from '@/lib/sample-data';
 
 const initialState: AppState = {
   projects: [],
@@ -168,9 +169,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         
+        // Create sample data if needed (for testing)
+        await createSampleDataIfNeeded();
+        
         // Load data progressively instead of all at once
         // Start with essential data first
         const users = await usersService.getAll();
+        console.log(`Loaded ${users.length} users:`, users.map(u => `${u.name} (${u.role})`));
         
         // Load projects and opportunities in parallel (most commonly needed)
         const [projects, opportunities] = await Promise.all([
@@ -183,6 +188,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           accountsService.getAll(),
           timeEntriesService.getAll(),
         ]);
+        console.log(`Loaded ${accounts.length} accounts:`, accounts.map(a => a.name));
 
         // Fix progress values for existing projects
         const fixedProjects = projects.map(project => {

@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +43,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
     spent: project?.spent?.toString() || '0',
     managerId: project?.managerId || state.currentUser?.id || '',
     progress: project?.progress?.toString() || '0',
+    teamMembers: project?.teamMembers || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,6 +60,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         spent: project.spent?.toString() || '0',
         managerId: project.managerId || state.currentUser?.id || '',
         progress: project.progress?.toString() || '0',
+        teamMembers: project.teamMembers || [],
       });
     } else {
       // Reset form for new project
@@ -70,6 +74,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         spent: '0',
         managerId: state.currentUser?.id || '',
         progress: '0',
+        teamMembers: [],
       });
     }
   }, [project, state.currentUser?.id]);
@@ -105,7 +110,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         budget: parseFloat(formData.budget) || 0,
         spent: parseFloat(formData.spent) || 0,
         managerId: formData.managerId,
-        teamMembers: project?.teamMembers || [],
+        teamMembers: formData.teamMembers,
         createdAt: project?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -141,6 +146,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         spent: '0',
         managerId: state.currentUser?.id || '',
         progress: '0',
+        teamMembers: [],
       });
     } catch (error) {
       console.error('Error saving project:', error);
@@ -150,12 +156,12 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | string[]) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
       // Auto-update progress when status changes
-      if (field === 'status') {
+      if (field === 'status' && typeof value === 'string') {
         switch (value) {
           case 'Completed':
             newData.progress = '100';
@@ -165,7 +171,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
             break;
           case 'In Progress':
             // Keep current progress if it's reasonable, otherwise set to 50%
-            const currentProgress = parseFloat(prev.progress) || 0;
+            const currentProgress = parseFloat(prev.progress as string) || 0;
             if (currentProgress <= 0) {
               newData.progress = '50';
             }
@@ -178,6 +184,16 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
       
       return newData;
     });
+  };
+
+  const handleAddTeamMember = (userId: string) => {
+    if (!formData.teamMembers.includes(userId)) {
+      handleChange('teamMembers', [...formData.teamMembers, userId]);
+    }
+  };
+
+  const handleRemoveTeamMember = (userId: string) => {
+    handleChange('teamMembers', formData.teamMembers.filter(id => id !== userId));
   };
 
   return (
@@ -308,6 +324,49 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
               <p className="text-xs text-muted-foreground">
                 Auto-calculated based on status, or set manually
               </p>
+            </div>
+          </div>
+
+          {/* Team Members Section */}
+          <div className="space-y-3">
+            <Label>Team Members</Label>
+            <div className="space-y-2">
+              <Select onValueChange={handleAddTeamMember}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Add team member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {state.users
+                    .filter(user => !formData.teamMembers.includes(user.id))
+                    .map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} ({user.role})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              
+              {formData.teamMembers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.teamMembers.map(memberId => {
+                    const member = state.users.find(u => u.id === memberId);
+                    return member ? (
+                      <Badge key={memberId} variant="secondary" className="flex items-center gap-1">
+                        {member.name}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleRemoveTeamMember(memberId)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

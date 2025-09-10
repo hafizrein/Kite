@@ -20,6 +20,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,7 +43,9 @@ import {
   Users,
   Settings,
   Crown,
-  Shield
+  Shield,
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
 
 interface Organization {
@@ -84,10 +96,11 @@ const mockOrganizations: Organization[] = [
 export function OrganizationSwitcher() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [organizations] = useState<Organization[]>(mockOrganizations);
+  const [organizations, setOrganizations] = useState<Organization[]>(mockOrganizations);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
 
   const currentOrg = organizations.find(org => org.isActive) || organizations[0];
 
@@ -140,6 +153,68 @@ export function OrganizationSwitcher() {
       setIsLoading(false);
     }
   };
+
+  const handleDeleteOrganization = async (orgId: string) => {
+    const orgToDelete = organizations.find(org => org.id === orgId);
+    if (!orgToDelete) return;
+
+    // Check if user has permission to delete (PM or Owner in the app, or owner/admin in the org)
+    const canDelete = (user?.role === 'PM' || user?.role === 'Owner') && 
+                     (orgToDelete.role === 'owner' || orgToDelete.role === 'admin');
+    
+    if (!canDelete) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "You don't have permission to delete this organization",
+      });
+      return;
+    }
+
+    // Prevent deleting the current active organization
+    if (orgToDelete.isActive && organizations.length > 1) {
+      toast({
+        variant: "destructive",
+        title: "Cannot Delete",
+        description: "Switch to another organization before deleting this one",
+      });
+      return;
+    }
+
+    // Prevent deleting the last organization
+    if (organizations.length === 1) {
+      toast({
+        variant: "destructive",
+        title: "Cannot Delete",
+        description: "You cannot delete your last organization",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In real app, make API call to delete organization
+      setOrganizations(prev => prev.filter(org => org.id !== orgId));
+      
+      toast({
+        title: "Organization deleted",
+        description: `${orgToDelete.name} has been deleted successfully`,
+      });
+      
+      setDeleteOrgId(null);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete organization",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check if user can delete organizations (PM or Owner role)
+  const canDeleteOrgs = user?.role === 'PM' || user?.role === 'Owner';
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -207,54 +282,72 @@ export function OrganizationSwitcher() {
         {organizations.map((org) => {
           const RoleIcon = getRoleIcon(org.role);
           const isCurrentOrg = org.id === currentOrg?.id;
+          const canDeleteThisOrg = canDeleteOrgs && 
+                                  (org.role === 'owner' || org.role === 'admin') && 
+                                  organizations.length > 1;
           
           return (
-            <DropdownMenuItem
-              key={org.id}
-              onClick={() => !isCurrentOrg && handleSwitchOrganization(org.id)}
-              className="flex items-center space-x-3 p-3 cursor-pointer"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={org.avatar} alt={org.name} />
-                <AvatarFallback className="text-xs">
-                  {getInitials(org.name)}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-sm truncate">
-                    {org.name}
-                  </span>
-                  {isCurrentOrg && (
-                    <Check className="h-4 w-4 text-primary" />
-                  )}
-                </div>
+            <div key={org.id} className="flex items-center group">
+              <DropdownMenuItem
+                onClick={() => !isCurrentOrg && handleSwitchOrganization(org.id)}
+                className="flex items-center space-x-3 p-3 cursor-pointer flex-1"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={org.avatar} alt={org.name} />
+                  <AvatarFallback className="text-xs">
+                    {getInitials(org.name)}
+                  </AvatarFallback>
+                </Avatar>
                 
-                <div className="flex items-center space-x-2 mt-1">
-                  <div className="flex items-center space-x-1">
-                    <RoleIcon className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {org.role}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-sm truncate">
+                      {org.name}
                     </span>
+                    {isCurrentOrg && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
                   </div>
                   
-                  <Badge 
-                    variant={getPlanBadgeVariant(org.plan)}
-                    className="text-xs px-1 py-0"
-                  >
-                    {org.plan}
-                  </Badge>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {org.memberCount}
-                    </span>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <div className="flex items-center space-x-1">
+                      <RoleIcon className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {org.role}
+                      </span>
+                    </div>
+                    
+                    <Badge 
+                      variant={getPlanBadgeVariant(org.plan)}
+                      className="text-xs px-1 py-0"
+                    >
+                      {org.plan}
+                    </Badge>
+                    
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {org.memberCount}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+              
+              {canDeleteThisOrg && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity mr-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteOrgId(org.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
+            </div>
           );
         })}
         
@@ -319,6 +412,30 @@ export function OrganizationSwitcher() {
           <span className="text-sm">Organization settings</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      
+      {/* Delete Organization Confirmation Dialog */}
+      <AlertDialog open={!!deleteOrgId} onOpenChange={() => setDeleteOrgId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{organizations.find(o => o.id === deleteOrgId)?.name}"?
+              <br />
+              <br />
+              <strong>This action cannot be undone.</strong> All projects, data, and team members associated with this organization will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteOrgId && handleDeleteOrganization(deleteOrgId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Organization
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DropdownMenu>
   );
 }
