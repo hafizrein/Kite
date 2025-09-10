@@ -38,7 +38,8 @@ type AppAction =
   | { type: 'ADD_TIME_ENTRY'; payload: TimeEntry }
   | { type: 'UPDATE_TIME_ENTRY'; payload: { id: string; updates: Partial<TimeEntry> } }
   | { type: 'DELETE_TIME_ENTRY'; payload: string }
-  | { type: 'SET_CURRENT_USER'; payload: User | null };
+  | { type: 'SET_CURRENT_USER'; payload: User | null }
+  | { type: 'SET_USERS'; payload: User[] };
 
 // Reducer
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -139,6 +140,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         currentUser: action.payload
+      };
+    case 'SET_USERS':
+      return {
+        ...state,
+        users: action.payload,
       };
     default:
       return state;
