@@ -12,9 +12,10 @@ import {
   onSnapshot,
   writeBatch,
   Timestamp,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, Account, Opportunity, User, TimeEntry } from './types';
+import { Project, Account, Opportunity, User, TimeEntry, WBSTask } from './types';
 
 // Generic CRUD operations
 export class FirestoreService<T extends { id: string }> {
@@ -145,4 +146,46 @@ export async function getUserTimeEntries(userId: string, projectId?: string): Pr
 
 export async function getAccountOpportunities(accountId: string): Promise<Opportunity[]> {
   return opportunitiesService.getByQuery('accountId', '==', accountId);
+}
+
+// WBS tasks stored under projects/{projectId}/wbs (single document) for simplicity
+export async function getProjectWBSTasks(projectId: string): Promise<WBSTask[]> {
+  const wbsDocRef = doc(db, 'projects', projectId, 'wbs', 'tree');
+  const wbsSnap = await getDoc(wbsDocRef);
+  if (!wbsSnap.exists()) return [];
+  const data = wbsSnap.data() as { tasks?: WBSTask[] };
+  return Array.isArray(data.tasks) ? data.tasks : [];
+}
+
+export async function saveProjectWBSTasks(projectId: string, tasks: WBSTask[]): Promise<void> {
+  const wbsDocRef = doc(db, 'projects', projectId, 'wbs', 'tree');
+
+  // Recursively remove undefined values so Firestore accepts the payload
+  const removeUndefined = (value: any): any => {
+    if (Array.isArray(value)) {
+      return value.map(removeUndefined);
+    }
+    if (value && typeof value === 'object') {
+      const result: Record<string, any> = {};
+      Object.keys(value).forEach((key) => {
+        const v = (value as any)[key];
+        if (v !== undefined) {
+          result[key] = removeUndefined(v);
+        }
+      });
+      return result;
+    }
+    return value;
+  };
+
+  const sanitizedTasks = removeUndefined(tasks);
+
+  await setDoc(
+    wbsDocRef,
+    {
+      tasks: sanitizedTasks,
+      updatedAt: Timestamp.now(),
+    },
+    { merge: true }
+  );
 }

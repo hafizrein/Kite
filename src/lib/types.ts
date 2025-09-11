@@ -75,3 +75,25 @@ export interface AppState {
   currentUser: User | null;
   loading?: boolean;
 }
+
+// Shared type for Work Breakdown Structure tasks
+export interface WBSTask {
+  id: string;
+  name: string;
+  description?: string;
+  parentId?: string;
+  children: WBSTask[];
+  type: 'milestone' | 'task' | 'phase';
+  status: 'not-started' | 'in-progress' | 'completed' | 'on-hold';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignedTo?: string;
+  estimatedHours: number;
+  actualHours: number;
+  startDate?: string;
+  endDate?: string;
+  budget: number;
+  spent: number;
+  progress: number;
+  dependencies: string[];
+  level: number;
+}

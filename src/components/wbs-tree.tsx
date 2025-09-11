@@ -56,26 +56,7 @@ import {
   FileText
 } from "lucide-react";
 
-export interface WBSTask {
-  id: string;
-  name: string;
-  description?: string;
-  parentId?: string;
-  children: WBSTask[];
-  type: 'milestone' | 'task' | 'phase';
-  status: 'not-started' | 'in-progress' | 'completed' | 'on-hold';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  assignedTo?: string;
-  estimatedHours: number;
-  actualHours: number;
-  startDate?: string;
-  endDate?: string;
-  budget: number;
-  spent: number;
-  progress: number;
-  dependencies: string[];
-  level: number;
-}
+import { WBSTask } from '@/lib/types';
 
 interface WBSTreeProps {
   projectId: string;
@@ -463,6 +444,25 @@ function TaskDialog({ task, parentTaskId, users, onSave, onCancel }: TaskDialogP
     spent: task?.spent || 0,
     progress: task?.progress || 0,
   });
+
+  // When editing a task, ensure the form is populated with its latest values
+  React.useEffect(() => {
+    setFormData({
+      name: task?.name || '',
+      description: task?.description || '',
+      type: task?.type || 'task',
+      status: task?.status || 'not-started',
+      priority: task?.priority || 'medium',
+      assignedTo: task?.assignedTo || 'unassigned',
+      estimatedHours: task?.estimatedHours ?? 0,
+      actualHours: task?.actualHours ?? 0,
+      startDate: task?.startDate || '',
+      endDate: task?.endDate || '',
+      budget: task?.budget ?? 0,
+      spent: task?.spent ?? 0,
+      progress: task?.progress ?? 0,
+    });
+  }, [task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

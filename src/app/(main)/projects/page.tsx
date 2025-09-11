@@ -41,7 +41,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProjectForm } from '@/components/forms/project-form';
 import { Input } from '@/components/ui/input';
-import { WBSTree, WBSTask } from '@/components/wbs-tree';
+import { WBSTree } from '@/components/wbs-tree';
+import { WBSTask } from '@/lib/types';
+import { getProjectWBSTasks, saveProjectWBSTasks } from '@/lib/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ProjectsPage() {
@@ -106,12 +108,39 @@ export default function ProjectsPage() {
     return manager?.name || 'Unassigned';
   };
 
-  const handleWBSTasksChange = (projectId: string, tasks: WBSTask[]) => {
+  const handleWBSTasksChange = async (projectId: string, tasks: WBSTask[]) => {
     setWBSTasks(prev => ({
       ...prev,
       [projectId]: tasks
     }));
+    try {
+      await saveProjectWBSTasks(projectId, tasks);
+      // Recalculate project progress from root tasks
+      const rootTasks = tasks; // top-level tasks are roots
+      const progress = rootTasks.length === 0
+        ? 0
+        : Math.round(rootTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / rootTasks.length);
+      // Persist to Firestore and update local state
+      await projectsService.update(projectId, { progress } as Partial<Project>);
+      dispatch({ type: 'UPDATE_PROJECT', payload: { id: projectId, updates: { progress } } });
+    } catch (err) {
+      console.error('Failed to save WBS tasks:', err);
+    }
   };
+
+  // Load WBS when a project is selected
+  React.useEffect(() => {
+    if (!selectedProjectId) return;
+    (async () => {
+      try {
+        const loaded = await getProjectWBSTasks(selectedProjectId);
+        setWBSTasks(prev => ({ ...prev, [selectedProjectId]: loaded }));
+      } catch (err) {
+        console.error('Failed to load WBS tasks:', err);
+        setWBSTasks(prev => ({ ...prev, [selectedProjectId]: prev[selectedProjectId] || [] }));
+      }
+    })();
+  }, [selectedProjectId]);
 
   const selectedProject = selectedProjectId ? state.projects.find(p => p.id === selectedProjectId) : null;
 
