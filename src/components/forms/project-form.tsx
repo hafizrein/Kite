@@ -286,7 +286,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="budget">Budget ($)</Label>
+              <Label htmlFor="budget">Budget (RM)</Label>
               <Input
                 id="budget"
                 type="number"
@@ -298,7 +298,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="spent">Spent ($)</Label>
+              <Label htmlFor="spent">Spent (RM)</Label>
               <Input
                 id="spent"
                 type="number"

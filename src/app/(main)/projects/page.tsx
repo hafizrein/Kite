@@ -45,6 +45,7 @@ import { WBSTree } from '@/components/wbs-tree';
 import { WBSTask } from '@/lib/types';
 import { getProjectWBSTasks, saveProjectWBSTasks } from '@/lib/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/lib/utils";
 
 export default function ProjectsPage() {
   const { state, dispatch } = useApp();
@@ -271,9 +272,9 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">${project.budget.toLocaleString()}</div>
+                        <div className="font-medium">{formatCurrency(project.budget)}</div>
                         <div className="text-sm text-muted-foreground">
-                          Spent: ${project.spent.toLocaleString()}
+                          Spent: {formatCurrency(project.spent)}
                         </div>
                       </div>
                     </TableCell>

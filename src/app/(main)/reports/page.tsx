@@ -33,6 +33,7 @@ import {
   Download,
   Filter
 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 // CPI/SPI Performance Indicators
 const getPerformanceColor = (value: number) => {
@@ -198,7 +199,7 @@ export default function ReportsPage() {
                 Math.round((overallMetrics.totalSpent / overallMetrics.totalBudget) * 100) : 0}%
             </div>
             <div className="text-xs text-muted-foreground">
-              ${overallMetrics.totalSpent.toLocaleString()} / ${overallMetrics.totalBudget.toLocaleString()}
+              {formatCurrency(overallMetrics.totalSpent)} / {formatCurrency(overallMetrics.totalBudget)}
             </div>
           </CardContent>
         </Card>
@@ -341,18 +342,18 @@ export default function ReportsPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">Total Budget</span>
-                          <span className="text-sm font-medium">${overallMetrics.totalBudget.toLocaleString()}</span>
+                          <span className="text-sm font-medium">{formatCurrency(overallMetrics.totalBudget)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">Total Spent</span>
-                          <span className="text-sm font-medium">${overallMetrics.totalSpent.toLocaleString()}</span>
+                          <span className="text-sm font-medium">{formatCurrency(overallMetrics.totalSpent)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">Variance</span>
                           <span className={`text-sm font-medium ${
                             overallMetrics.totalSpent <= overallMetrics.totalBudget ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            ${Math.abs(overallMetrics.totalBudget - overallMetrics.totalSpent).toLocaleString()}
+                            {formatCurrency(Math.abs(overallMetrics.totalBudget - overallMetrics.totalSpent))}
                           </span>
                         </div>
                       </div>

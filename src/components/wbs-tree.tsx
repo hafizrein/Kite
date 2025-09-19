@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 
 import { WBSTask } from '@/lib/types';
+import { formatCurrency } from "@/lib/utils";
 
 interface WBSTreeProps {
   projectId: string;
@@ -297,7 +298,7 @@ export function WBSTree({ projectId, tasks, onTasksChange, users }: WBSTreeProps
                 
                 <div className="flex items-center space-x-1">
                   <DollarSign className="h-3 w-3" />
-                  <span>${task.spent} / ${task.budget}</span>
+                  <span>{formatCurrency(task.spent)} / {formatCurrency(task.budget)}</span>
                 </div>
               </div>
             </div>
@@ -623,7 +624,7 @@ function TaskDialog({ task, parentTaskId, users, onSave, onCancel }: TaskDialogP
           </div>
           
           <div>
-            <Label htmlFor="budget">Budget ($)</Label>
+            <Label htmlFor="budget">Budget (RM)</Label>
             <Input
               id="budget"
               type="number"
@@ -635,7 +636,7 @@ function TaskDialog({ task, parentTaskId, users, onSave, onCancel }: TaskDialogP
           </div>
           
           <div>
-            <Label htmlFor="spent">Spent ($)</Label>
+            <Label htmlFor="spent">Spent (RM)</Label>
             <Input
               id="spent"
               type="number"

@@ -41,6 +41,7 @@ import {
 import { OpportunityForm } from '@/components/forms/opportunity-form';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 
 export default function OpportunitiesPage() {
   const { state, dispatch } = useApp();
@@ -197,7 +198,7 @@ export default function OpportunitiesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">${getTotalValue().toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatCurrency(getTotalValue())}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
@@ -208,7 +209,7 @@ export default function OpportunitiesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Weighted Value</p>
-                <p className="text-2xl font-bold">${getWeightedValue().toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatCurrency(getWeightedValue())}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
             </div>
@@ -291,7 +292,7 @@ export default function OpportunitiesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">
-                      ${opportunity.amount.toLocaleString()}
+                      {formatCurrency(opportunity.amount)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -305,7 +306,7 @@ export default function OpportunitiesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium text-green-600">
-                      ${(opportunity.amount * opportunity.probability / 100).toLocaleString()}
+                      {formatCurrency(opportunity.amount * opportunity.probability / 100)}
                     </TableCell>
                     <TableCell>{getOwnerName(opportunity.ownerId)}</TableCell>
                     <TableCell className="text-muted-foreground">

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AccountForm } from '@/components/forms/account-form';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from "@/lib/utils";
 
 export default function AccountsPage() {
   const { state, dispatch } = useApp();
@@ -191,7 +192,7 @@ export default function AccountsPage() {
                           <span className="text-sm font-medium">{opportunities.length}</span>
                           {opportunities.length > 0 && (
                             <Badge variant="secondary" className="text-xs">
-                              ${opportunities.reduce((sum, opp) => sum + opp.amount, 0).toLocaleString()}
+                              {formatCurrency(opportunities.reduce((sum, opp) => sum + opp.amount, 0))}
                             </Badge>
                           )}
                         </div>

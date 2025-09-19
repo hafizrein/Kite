@@ -121,7 +121,7 @@ export const organizationSchema = z.object({
   phone: z.string().max(20, "Phone number must be less than 20 characters").optional(),
   email: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  currency: z.enum(["USD", "EUR", "GBP", "CAD"], {
+  currency: z.enum(["MYR", "USD", "EUR", "GBP", "CAD"], {
     required_error: "Please select a currency",
   }),
   timezone: z.string().min(1, "Please select a timezone"),
@@ -133,8 +133,8 @@ export const rateCardSchema = z.object({
   id: z.string().optional(),
   role: z.string().min(2, "Role must be at least 2 characters").max(50, "Role must be less than 50 characters"),
   department: z.string().min(1, "Please select a department"),
-  hourlyRate: z.number().min(1, "Hourly rate must be at least $1").max(1000, "Hourly rate cannot exceed $1000"),
-  currency: z.enum(["USD", "EUR", "GBP", "CAD"], {
+  hourlyRate: z.number().min(1, "Hourly rate must be at least RM1").max(1000, "Hourly rate cannot exceed RM1000"),
+  currency: z.enum(["MYR", "USD", "EUR", "GBP", "CAD"], {
     required_error: "Please select a currency",
   }),
   effectiveDate: z.string().min(1, "Please select an effective date"),

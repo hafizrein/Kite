@@ -23,6 +23,7 @@ import {
   Calendar
 } from "lucide-react";
 import { SimpleChart } from "@/components/ui/simple-chart";
+import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -125,15 +126,6 @@ export default function DashboardPage() {
   };
 
   const { avgCPI, avgSPI, avgProgress } = getPerformanceMetrics();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getProjectStatusColor = (status: string) => {
     switch (status) {

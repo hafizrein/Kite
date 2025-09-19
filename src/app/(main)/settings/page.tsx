@@ -107,7 +107,7 @@ export default function SettingsPage() {
       role: 'Senior Developer',
       department: 'Engineering',
       hourlyRate: 120,
-      currency: 'USD',
+      currency: 'MYR',
       effectiveDate: '2024-01-01',
       isActive: true
     },
@@ -116,7 +116,7 @@ export default function SettingsPage() {
       role: 'Project Manager',
       department: 'Management',
       hourlyRate: 95,
-      currency: 'USD',
+      currency: 'MYR',
       effectiveDate: '2024-01-01',
       isActive: true
     },
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       role: 'Designer',
       department: 'Design',
       hourlyRate: 85,
-      currency: 'USD',
+      currency: 'MYR',
       effectiveDate: '2024-01-01',
       isActive: true
     }
@@ -134,11 +134,11 @@ export default function SettingsPage() {
   const [orgSettings, setOrgSettings] = useState<OrganizationSettings>({
     name: 'Kite Digital Solutions',
     address: '123 Business Ave, Suite 100, City, State 12345',
-    phone: '+1 (555) 123-4567',
+    phone: '+60 12-345 6789',
     email: 'info@kitedigital.com',
     website: 'https://kitedigital.com',
-    currency: 'USD',
-    timezone: 'America/New_York',
+    currency: 'MYR',
+    timezone: 'Asia/Kuala_Lumpur',
     fiscalYearStart: '01-01',
     workingHours: {
       start: '09:00',
@@ -280,7 +280,7 @@ export default function SettingsPage() {
         role: '',
         department: '',
         hourlyRate: 0,
-        currency: 'USD',
+        currency: 'MYR',
         effectiveDate: new Date().toISOString().split('T')[0],
         isActive: true
       }
@@ -341,6 +341,7 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="MYR">MYR</SelectItem>
                   <SelectItem value="USD">USD</SelectItem>
                   <SelectItem value="EUR">EUR</SelectItem>
                   <SelectItem value="GBP">GBP</SelectItem>
@@ -466,7 +467,7 @@ export default function SettingsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+              <Label htmlFor="hourlyRate">Hourly Rate (RM)</Label>
                   <Input
                     id="hourlyRate"
                     type="number"
@@ -558,19 +559,20 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="currency">Default Currency</Label>
-                  <Select
-                    value={orgSettings.currency}
-                    onValueChange={(value) => setOrgSettings(prev => ({ ...prev, currency: value }))}
-                  >
+              <Select
+                value={orgSettings.currency}
+                onValueChange={(value) => setOrgSettings(prev => ({ ...prev, currency: value }))}
+              >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="CAD">CAD</SelectItem>
-                    </SelectContent>
+                <SelectContent>
+                  <SelectItem value="MYR">MYR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="CAD">CAD</SelectItem>
+                </SelectContent>
                   </Select>
                 </div>
                 <div>
@@ -681,7 +683,7 @@ export default function SettingsPage() {
                     <TableRow key={rateCard.id}>
                       <TableCell className="font-medium">{rateCard.role}</TableCell>
                       <TableCell>{rateCard.department}</TableCell>
-                      <TableCell>${rateCard.hourlyRate}/{rateCard.currency}</TableCell>
+                      <TableCell>{new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(rateCard.hourlyRate)}/{rateCard.currency}</TableCell>
                       <TableCell>{new Date(rateCard.effectiveDate).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Badge variant={rateCard.isActive ? "default" : "secondary"}>

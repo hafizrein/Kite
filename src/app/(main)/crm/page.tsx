@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useApp } from '@/contexts/app-context';
 import { Users, Building, TrendingUp, DollarSign } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
 export default function CRMPage() {
@@ -62,7 +63,7 @@ export default function CRMPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${pipelineValue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(pipelineValue)}</div>
           </CardContent>
         </Card>
 
