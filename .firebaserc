@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "kite-ndagf"
-  }
+    "default": "kite-ndagf",
+    "firebase logout": "bankbot-a72d2"
+  },
+  "targets": {},
+  "etags": {}
 }

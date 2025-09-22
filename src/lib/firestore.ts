@@ -15,7 +15,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, Account, Opportunity, User, TimeEntry, WBSTask } from './types';
+import { Project, Account, Opportunity, User, TimeEntry, WBSTask, Attachment } from './types';
 
 // Generic CRUD operations
 export class FirestoreService<T extends { id: string }> {
@@ -188,4 +188,87 @@ export async function saveProjectWBSTasks(projectId: string, tasks: WBSTask[]): 
     },
     { merge: true }
   );
+}
+
+// Attachment-specific functions (metadata only - no file storage)
+export async function createAttachmentMetadata(
+  file: File,
+  entityType: 'projects' | 'accounts' | 'opportunities',
+  entityId: string,
+  userId: string
+): Promise<Attachment> {
+  try {
+    // Create a unique file name
+    const timestamp = Date.now();
+
+    // Create attachment object with metadata only (no actual file upload)
+    const attachment: Attachment = {
+      id: timestamp.toString(),
+      name: file.name,
+      type: 'file',
+      url: '', // No actual file URL - just metadata
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: userId,
+    };
+
+    return attachment;
+  } catch (error) {
+    console.error('Error creating attachment metadata:', error);
+    throw new Error('Failed to create attachment metadata');
+  }
+}
+
+export async function removeAttachmentMetadata(
+  attachmentId: string,
+  entityType: 'projects' | 'accounts' | 'opportunities',
+  entityId: string
+): Promise<void> {
+  try {
+    // This function just removes the metadata - no actual file deletion needed
+    console.log(`Removed attachment metadata for ${attachmentId}`);
+  } catch (error) {
+    console.error('Error removing attachment metadata:', error);
+  }
+}
+
+export async function saveAttachmentsToEntity(
+  entityType: 'projects' | 'accounts' | 'opportunities',
+  entityId: string,
+  attachments: Attachment[]
+): Promise<void> {
+  try {
+    const entityRef = doc(db, entityType, entityId);
+
+    await updateDoc(entityRef, {
+      attachments: attachments,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error('Error saving attachments to entity:', error);
+    throw new Error('Failed to save attachments');
+  }
+}
+
+export async function getEntityWithAttachments(
+  entityType: 'projects' | 'accounts' | 'opportunities',
+  entityId: string
+): Promise<any> {
+  try {
+    const entityRef = doc(db, entityType, entityId);
+    const entitySnap = await getDoc(entityRef);
+
+    if (entitySnap.exists()) {
+      return {
+        id: entitySnap.id,
+        ...entitySnap.data(),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting entity with attachments:', error);
+    throw new Error('Failed to load entity');
+  }
 }

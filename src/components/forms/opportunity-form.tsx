@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
-import { Opportunity } from '@/lib/types';
-import { opportunitiesService } from '@/lib/firestore';
+import { Opportunity, Attachment } from '@/lib/types';
+import { opportunitiesService, saveAttachmentsToEntity } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { AttachmentForm } from './attachment-form';
 
 interface OpportunityFormProps {
   opportunity?: Opportunity;
@@ -40,6 +41,7 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
     closeDate: opportunity?.closeDate || '',
     description: opportunity?.description || '',
     ownerId: opportunity?.ownerId || state.currentUser?.id || '',
+    attachments: opportunity?.attachments || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,6 +57,7 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
         closeDate: opportunity.closeDate || '',
         description: opportunity.description || '',
         ownerId: opportunity.ownerId || state.currentUser?.id || '',
+        attachments: opportunity.attachments || [],
       });
     } else {
       // Reset form for new opportunity
@@ -67,6 +70,7 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
         closeDate: '',
         description: '',
         ownerId: state.currentUser?.id || '',
+        attachments: [],
       });
     }
   }, [opportunity, state.currentUser?.id]);
@@ -95,20 +99,30 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
       if (opportunity) {
         // Update existing opportunity in database
         await opportunitiesService.update(opportunity.id, opportunityData);
-        
+
+        // Save attachments to the opportunity
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('opportunities', opportunity.id, formData.attachments);
+        }
+
         // Update local state
         dispatch({
           type: 'UPDATE_OPPORTUNITY',
-          payload: { id: opportunity.id, updates: { ...opportunityData, id: opportunity.id } }
+          payload: { id: opportunity.id, updates: { ...opportunityData, attachments: formData.attachments, id: opportunity.id } }
         });
       } else {
         // Create new opportunity in database
         const opportunityId = await opportunitiesService.create(opportunityData);
-        
+
+        // Save attachments to the new opportunity
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('opportunities', opportunityId, formData.attachments);
+        }
+
         // Add to local state with the new ID
         dispatch({
           type: 'ADD_OPPORTUNITY',
-          payload: { ...opportunityData, id: opportunityId }
+          payload: { ...opportunityData, attachments: formData.attachments, id: opportunityId }
         });
       }
 
@@ -122,6 +136,7 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
         closeDate: '',
         description: '',
         ownerId: state.currentUser?.id || '',
+        attachments: [],
       });
     } catch (error) {
       console.error('Error saving opportunity:', error);
@@ -137,7 +152,7 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {opportunity ? 'Edit Opportunity' : 'Create New Opportunity'}
@@ -270,6 +285,15 @@ export function OpportunityForm({ opportunity, isOpen, onClose }: OpportunityFor
               rows={3}
             />
           </div>
+
+          {/* Attachments Section */}
+          <AttachmentForm
+            attachments={formData.attachments}
+            onAttachmentsChange={(attachments) => setFormData(prev => ({ ...prev, attachments }))}
+            currentUserId={state.currentUser?.id || ''}
+            entityType="opportunities"
+            entityId={opportunity?.id || 'new'}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

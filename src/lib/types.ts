@@ -1,3 +1,15 @@
+export interface Attachment {
+  id: string;
+  name: string;
+  type: 'file' | 'link';
+  url?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -12,6 +24,7 @@ export interface Project {
   spent: number;
   managerId: string;
   teamMembers: string[];
+  attachments?: Attachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +38,7 @@ export interface Account {
   email?: string;
   address?: string;
   ownerId: string;
+  attachments?: Attachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +54,7 @@ export interface Opportunity {
   closeDate: string;
   description?: string;
   ownerId: string;
+  attachments?: Attachment[];
   createdAt: string;
   updatedAt: string;
 }

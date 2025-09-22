@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
-import { Account } from '@/lib/types';
-import { accountsService } from '@/lib/firestore';
+import { Account, Attachment } from '@/lib/types';
+import { accountsService, saveAttachmentsToEntity } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { AttachmentForm } from './attachment-form';
 
 interface AccountFormProps {
   account?: Account;
@@ -52,6 +53,7 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
     email: account?.email || '',
     address: account?.address || '',
     ownerId: account?.ownerId || state.currentUser?.id || '',
+    attachments: account?.attachments || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -66,6 +68,7 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
         email: account.email || '',
         address: account.address || '',
         ownerId: account.ownerId || state.currentUser?.id || '',
+        attachments: account.attachments || [],
       });
     } else {
       // Reset form for new account
@@ -77,6 +80,7 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
         email: '',
         address: '',
         ownerId: state.currentUser?.id || '',
+        attachments: [],
       });
     }
   }, [account, state.currentUser?.id]);
@@ -101,20 +105,30 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
       if (account) {
         // Update existing account in database
         await accountsService.update(account.id, accountData);
-        
+
+        // Save attachments to the account
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('accounts', account.id, formData.attachments);
+        }
+
         // Update local state
         dispatch({
           type: 'UPDATE_ACCOUNT',
-          payload: { id: account.id, updates: { ...accountData, id: account.id } }
+          payload: { id: account.id, updates: { ...accountData, attachments: formData.attachments, id: account.id } }
         });
       } else {
         // Create new account in database
         const accountId = await accountsService.create(accountData);
-        
+
+        // Save attachments to the new account
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('accounts', accountId, formData.attachments);
+        }
+
         // Add to local state with the new ID
         dispatch({
           type: 'ADD_ACCOUNT',
-          payload: { ...accountData, id: accountId }
+          payload: { ...accountData, attachments: formData.attachments, id: accountId }
         });
       }
 
@@ -127,6 +141,7 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
         email: '',
         address: '',
         ownerId: state.currentUser?.id || '',
+        attachments: [],
       });
     } catch (error) {
       console.error('Error saving account:', error);
@@ -142,7 +157,7 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {account ? 'Edit Account' : 'Create New Account'}
@@ -248,6 +263,15 @@ export function AccountForm({ account, isOpen, onClose }: AccountFormProps) {
               placeholder="123 Main St, City, State, ZIP"
             />
           </div>
+
+          {/* Attachments Section */}
+          <AttachmentForm
+            attachments={formData.attachments}
+            onAttachmentsChange={(attachments) => setFormData(prev => ({ ...prev, attachments }))}
+            currentUserId={state.currentUser?.id || ''}
+            entityType="accounts"
+            entityId={account?.id || 'new'}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

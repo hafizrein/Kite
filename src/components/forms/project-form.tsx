@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/app-context';
-import { Project } from '@/lib/types';
-import { projectsService } from '@/lib/firestore';
+import { Project, Attachment } from '@/lib/types';
+import { projectsService, saveAttachmentsToEntity } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { AttachmentForm } from './attachment-form';
 
 interface ProjectFormProps {
   project?: Project;
@@ -44,6 +45,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
     managerId: project?.managerId || state.currentUser?.id || '',
     progress: project?.progress?.toString() || '0',
     teamMembers: project?.teamMembers || [],
+    attachments: project?.attachments || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,6 +63,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         managerId: project.managerId || state.currentUser?.id || '',
         progress: project.progress?.toString() || '0',
         teamMembers: project.teamMembers || [],
+        attachments: project.attachments || [],
       });
     } else {
       // Reset form for new project
@@ -75,6 +78,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         managerId: state.currentUser?.id || '',
         progress: '0',
         teamMembers: [],
+        attachments: [],
       });
     }
   }, [project, state.currentUser?.id]);
@@ -118,20 +122,30 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
       if (project) {
         // Update existing project in database
         await projectsService.update(project.id, projectData);
-        
+
+        // Save attachments to the project
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('projects', project.id, formData.attachments);
+        }
+
         // Update local state
         dispatch({
           type: 'UPDATE_PROJECT',
-          payload: { id: project.id, updates: { ...projectData, id: project.id } }
+          payload: { id: project.id, updates: { ...projectData, attachments: formData.attachments, id: project.id } }
         });
       } else {
         // Create new project in database
         const projectId = await projectsService.create(projectData);
-        
+
+        // Save attachments to the new project
+        if (formData.attachments.length > 0) {
+          await saveAttachmentsToEntity('projects', projectId, formData.attachments);
+        }
+
         // Add to local state with the new ID
         dispatch({
           type: 'ADD_PROJECT',
-          payload: { ...projectData, id: projectId }
+          payload: { ...projectData, attachments: formData.attachments, id: projectId }
         });
       }
 
@@ -147,6 +161,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
         managerId: state.currentUser?.id || '',
         progress: '0',
         teamMembers: [],
+        attachments: [],
       });
     } catch (error) {
       console.error('Error saving project:', error);
@@ -198,7 +213,7 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {project ? 'Edit Project' : 'Create New Project'}
@@ -369,6 +384,15 @@ export function ProjectForm({ project, isOpen, onClose }: ProjectFormProps) {
               )}
             </div>
           </div>
+
+          {/* Attachments Section */}
+          <AttachmentForm
+            attachments={formData.attachments}
+            onAttachmentsChange={(attachments) => setFormData(prev => ({ ...prev, attachments }))}
+            currentUserId={state.currentUser?.id || ''}
+            entityType="projects"
+            entityId={project?.id || 'new'}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
